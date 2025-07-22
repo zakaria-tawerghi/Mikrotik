@@ -3,30 +3,36 @@ Add the AdGuard DNS Redirection Rules in the Correct Order
 These commands use place-before=0 for the first rule, and then sequentially use place-before to stack them at the very top.
 
 # *** Phase 1: Exclude AdGuard itself from redirection (MUST be at the very top of DSTNAT) ***
-/ip firewall nat add chain=dstnat action=accept protocol=udp dst-port=53 dst-address=5.5.5.10 comment="Exclude AdGuard DNS from redirection" place-before=0
-/ip firewall nat add chain=dstnat action=accept protocol=tcp dst-port=53 dst-address=5.5.5.10 comment="Exclude AdGuard DNS from redirection" place-before=1
+/ip firewall nat add chain=dstnat action=accept protocol=udp dst-port=53 dst-address=10.10.10.11 comment="Exclude AdGuard DNS from redirection" place-before=0
+/ip firewall nat add chain=dstnat action=accept protocol=tcp dst-port=53 dst-address=10.10.10.11 comment="Exclude AdGuard DNS from redirection" place-before=1
 
 # *** Phase 2: Redirect all other DNS queries to AdGuard ***
 # These rules will now go directly after the 'accept' rules.
 
 # Redirect LAN (192.168.5.0/24) DNS to AdGuard
-/ip firewall nat add chain=dstnat protocol=udp dst-port=53 in-interface=LAN action=dst-nat to-addresses=5.5.5.10 to-ports=53 comment="Redirect LAN DNS to AdGuard" place-before=2
-/ip firewall nat add chain=dstnat protocol=tcp dst-port=53 in-interface=LAN action=dst-nat to-addresses=5.5.5.10 to-ports=53 comment="Redirect LAN DNS to AdGuard" place-before=3
+/ip firewall nat add chain=dstnat protocol=udp dst-port=53 in-interface=ether9LAN action=dst-nat to-addresses=10.10.10.11 to-ports=53 comment="Redirect LAN DNS to AdGuard" place-before=2
+/ip firewall nat add chain=dstnat protocol=tcp dst-port=53 in-interface=ether9LAN action=dst-nat to-addresses=10.10.10.11 to-ports=53 comment="Redirect LAN DNS to AdGuard" place-before=3
 
 # Redirect Cam's (192.168.20.0/24) DNS to AdGuard - Using 'vlan2'
-/ip firewall nat add chain=dstnat protocol=udp dst-port=53 in-interface=vlan2 action=dst-nat to-addresses=5.5.5.10 to-ports=53 comment="Redirect Cam's DNS to AdGuard" place-before=4
-/ip firewall nat add chain=dstnat protocol=tcp dst-port=53 in-interface=vlan2 action=dst-nat to-addresses=5.5.5.10 to-ports=53 comment="Redirect Cam's DNS to AdGuard" place-before=5
+/ip firewall nat add chain=dstnat protocol=udp dst-port=53 in-interface=vlan1 action=dst-nat to-addresses=10.10.10.11 to-ports=53 comment="Redirect Cam's DNS to AdGuard" place-before=4
+/ip firewall nat add chain=dstnat protocol=tcp dst-port=53 in-interface=vlan1 action=dst-nat to-addresses=10.10.10.11 to-ports=53 comment="Redirect Cam's DNS to AdGuard" place-before=5
 
 # Redirect VLAN133 (VOIP - 10.215.0.0/25) DNS to AdGuard - Using 'vlan6'
-/ip firewall nat add chain=dstnat protocol=udp dst-port=53 in-interface=vlan6 action=dst-nat to-addresses=5.5.5.10 to-ports=53 comment="Redirect VLAN133 DNS to AdGuard" place-before=6
-/ip firewall nat add chain=dstnat protocol=tcp dst-port=53 in-interface=vlan6 action=dst-nat to-addresses=5.5.5.10 to-ports=53 comment="Redirect VLAN133 DNS to AdGuard" place-before=7
+/ip firewall nat add chain=dstnat protocol=udp dst-port=53 in-interface=vlan2 action=dst-nat to-addresses=10.10.10.11 to-ports=53 comment="Redirect VOIP DNS to AdGuard" place-before=6
+/ip firewall nat add chain=dstnat protocol=tcp dst-port=53 in-interface=vlan2 action=dst-nat to-addresses=10.10.10.11 to-ports=53 comment="Redirect VOIP to AdGuard" place-before=7
+
+
+
+IoT IoT
+/ip firewall nat add chain=dstnat protocol=udp dst-port=53 in-interface=IoT action=dst-nat to-addresses=10.10.10.11 to-ports=53 comment="Redirect IoT to AdGuard" place-before=8
+/ip firewall nat add chain=dstnat protocol=tcp dst-port=53 in-interface=IoT action=dst-nat to-addresses=10.10.10.11 to-ports=53 comment="Redirect IoT to AdGuard" place-before=9
 
 
 Important Additional Considerations:
 Hotspot Walled Garden: Just like AdGuard, you must add your Pi-hole's IP address (5.5.5.11) to your Hotspot Walled Garden (per profile) so that unauthenticated clients can reach it for DNS if AdGuard is down.
 
 # For hsprof2 (LAN hotspot)
-/ip hotspot walled-garden add dst-host=5.5.5.11 server=hsprof2 comment="Allow Pi-hole DNS"
+/ip hotspot walled-garden add dst-host=10.10.10.11 server=hsprof2 comment="Allow Pi-hole DNS"
 
 # For hsprof3 (Cam's hotspot - assuming this is the correct profile for vlan2)
-/ip hotspot walled-garden add dst-host=5.5.5.11 server=hsprof3 comment="Allow Pi-hole DNS"
+/ip hotspot walled-garden add dst-host=10.10.10.11 server=hsprof3 comment="Allow Pi-hole DNS"
