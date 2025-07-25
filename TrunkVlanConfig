@@ -1,0 +1,74 @@
+# 🧾 MikroTik VLAN Bridge Setup – Zakariya’s Deployment
+
+## 🔧 Base Info
+- **Router Model**: [Insert model name]
+- **RouterOS Version**: [Insert version]
+- **Setup Date**: July 2025
+- **Purpose**: VLAN-based segmentation for cams, VoIP, Docker apps, and native LAN hotspot
+
+---
+
+## 🌉 Bridge Configuration
+
+| Parameter       | Value     |
+|----------------|-----------|
+| Bridge Name     | bridge1   |
+| VLAN Filtering  | Enabled   |
+| Member Port     | ether2    |
+
+---
+
+## 🧱 VLAN Interfaces
+
+| Interface Name     | VLAN ID | Parent Interface | IP Address       | Subnet           |
+|--------------------|---------|------------------|------------------|------------------|
+| vlan101-cams       | 101     | bridge1          | 192.168.101.1    | 192.168.101.0/24 |
+| vlan102-voip       | 102     | bridge1          | 192.168.102.1    | 192.168.102.0/24 |
+| vlan110-docker     | 110     | bridge1          | 10.10.10.1       | 10.10.10.0/26    |
+
+---
+
+## 📦 DHCP Servers
+
+| VLAN Interface    | DHCP Range                     | Gateway         |
+|-------------------|--------------------------------|-----------------|
+| vlan101-cams      | 192.168.101.10–192.168.101.200 | 192.168.101.1   |
+| vlan102-voip      | 192.168.102.10–192.168.102.200 | 192.168.102.1   |
+| vlan110-docker    | 10.10.10.2–10.10.10.62          | 10.10.10.1      |
+
+---
+
+## 🗺️ VLAN Bridge Table
+
+| VLAN ID | Tagged Ports | Untagged Ports | Bridge   | Notes                     |
+|---------|--------------|----------------|----------|---------------------------|
+| 101     | ether2       |                | bridge1  | Cams                      |
+| 102     | ether2       |                | bridge1  | VoIP                      |
+| 110     | ether2       |                | bridge1  | Docker applications       |
+| 0       |              | ether2         | bridge1  | Native LAN + Hotspot      |
+
+---
+
+## ⚙️ Port PVID Configuration
+
+| Port    | PVID |
+|---------|------|
+| ether2  | 0    |
+
+---
+
+## 🔥 Hotspot Service
+
+| Parameter         | Value                  |
+|------------------|------------------------|
+| Interface        | bridge1 (untagged VLAN)|
+| IP/Subnet        | 192.168.100.1/24       |
+| DHCP             | Enabled                |
+| Service          | Hotspot configured     |
+
+---
+
+## 🧭 Notes
+- VLANs are segmented with separate DHCP scopes.
+- Downstream Unifi switches should match tagging logic for proper traffic handling.
+- AdGuard Home is reachable at `10.10.10.11`, serving DNS filtering for Docker VLAN clients.
