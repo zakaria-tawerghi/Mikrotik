@@ -8,27 +8,48 @@
 
 ---
 
-## 🌉 Bridge Configuration
+## 🧭 Step-by-Step Configuration Instructions
 
-| Parameter       | Value     |
-|----------------|-----------|
-| Bridge Name     | bridge1   |
-| VLAN Filtering  | Enabled   |
-| Member Port     | ether2    |
+### 1. Create the Bridge
+- Open Winbox → Go to **Bridge → Bridge**
+- Click **"+"**, name the bridge `bridge1`
+- Click **Apply** and **OK**
 
----
+### 2. Add ether2 to the Bridge
+- Go to **Bridge → Ports**
+- Click **"+"**, choose `ether2` as the interface
+- Select `bridge1` as the bridge → Apply
 
-## 🧱 VLAN Interfaces
+### 3. Enable VLAN Filtering
+- Go to **Bridge → Bridge**
+- Double-click `bridge1` → Enable **VLAN Filtering**
+- Click **Apply** and **OK**
 
-| Interface Name     | VLAN ID | Parent Interface | IP Address       | Subnet           |
-|--------------------|---------|------------------|------------------|------------------|
-| vlan101-cams       | 101     | bridge1          | 192.168.101.1    | 192.168.101.0/24 |
-| vlan102-voip       | 102     | bridge1          | 192.168.102.1    | 192.168.102.0/24 |
-| vlan110-docker     | 110     | bridge1          | 10.10.10.1       | 10.10.10.0/26    |
+### 4. Create VLAN Interfaces
+- Go to **Interfaces → VLAN** → Click **"+"**
+- Create the following VLANs:
 
----
+| VLAN Name      | VLAN ID | Interface | Subnet              |
+|----------------|---------|-----------|----------------------|
+| vlan101-cams   | 101     | bridge1   | 192.168.101.0/24     |
+| vlan102-voip   | 102     | bridge1   | 192.168.102.0/24     |
+| vlan110-docker | 110     | bridge1   | 10.10.10.0/26        |
 
-## 📦 DHCP Servers
+- For each: name clearly, set VLAN ID, bind to `bridge1`
+
+### 5. Assign IP Addresses
+- Go to **IP → Addresses**
+- Add IPs to VLAN interfaces:
+
+| Interface        | IP Address        |
+|------------------|------------------|
+| vlan101-cams     | 192.168.101.1/24 |
+| vlan102-voip     | 192.168.102.1/24 |
+| vlan110-docker   | 10.10.10.1/26    |
+
+### 6. Create DHCP Servers
+- Go to **IP → DHCP Server** → Click **"+"** for each VLAN
+- Define DHCP pool, gateway, DNS
 
 | VLAN Interface    | DHCP Range                     | Gateway         |
 |-------------------|--------------------------------|-----------------|
@@ -36,39 +57,39 @@
 | vlan102-voip      | 192.168.102.10–192.168.102.200 | 192.168.102.1   |
 | vlan110-docker    | 10.10.10.2–10.10.10.62          | 10.10.10.1      |
 
+### 7. Configure VLAN Table for Bridge
+- Go to **Bridge → VLANs** → Add entries for each VLAN:
+
+| VLAN ID | Tagged Ports | Untagged Ports | Bridge   | Purpose               |
+|---------|--------------|----------------|----------|-----------------------|
+| 101     | ether2       |                | bridge1  | Cams                  |
+| 102     | ether2       |                | bridge1  | VoIP                  |
+| 110     | ether2       |                | bridge1  | Docker apps           |
+| 0       |              | ether2         | bridge1  | Native LAN / Hotspot  |
+
+### 8. Set PVID for Native LAN
+- Go to **Bridge → Ports**
+- Double-click `ether2` → Set **PVID = 0** → Apply
+
+### 9. Configure Hotspot
+- Interface: `bridge1` (untagged/native VLAN)
+- IP Address: `192.168.100.1/24`
+- Enable DHCP and Hotspot Service
+
 ---
 
-## 🗺️ VLAN Bridge Table
+## 🔍 Summary of VLAN Interfaces
 
-| VLAN ID | Tagged Ports | Untagged Ports | Bridge   | Notes                     |
-|---------|--------------|----------------|----------|---------------------------|
-| 101     | ether2       |                | bridge1  | Cams                      |
-| 102     | ether2       |                | bridge1  | VoIP                      |
-| 110     | ether2       |                | bridge1  | Docker applications       |
-| 0       |              | ether2         | bridge1  | Native LAN + Hotspot      |
-
----
-
-## ⚙️ Port PVID Configuration
-
-| Port    | PVID |
-|---------|------|
-| ether2  | 0    |
-
----
-
-## 🔥 Hotspot Service
-
-| Parameter         | Value                  |
-|------------------|------------------------|
-| Interface        | bridge1 (untagged VLAN)|
-| IP/Subnet        | 192.168.100.1/24       |
-| DHCP             | Enabled                |
-| Service          | Hotspot configured     |
+| Name             | VLAN ID | IP Address       | Subnet            | Notes                |
+|------------------|---------|------------------|-------------------|----------------------|
+| vlan101-cams     | 101     | 192.168.101.1    | 192.168.101.0/24  | DHCP only            |
+| vlan102-voip     | 102     | 192.168.102.1    | 192.168.102.0/24  | DHCP only            |
+| vlan110-docker   | 110     | 10.10.10.1       | 10.10.10.0/26     | DHCP only, AdGuard   |
+| Native LAN       | 0       | 192.168.100.1    | 192.168.100.0/24  | DHCP + Hotspot       |
 
 ---
 
 ## 🧭 Notes
-- VLANs are segmented with separate DHCP scopes.
-- Downstream Unifi switches should match tagging logic for proper traffic handling.
-- AdGuard Home is reachable at `10.10.10.11`, serving DNS filtering for Docker VLAN clients.
+- Downstream Unifi switches must use matching trunk logic for tagging.
+- AdGuard Home (10.10.10.11) is served over Docker VLAN for DNS filtering.
+- Consider using VLAN 10 or 100 for native LAN in future deployments for clarity.
