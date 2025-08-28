@@ -1,0 +1,76 @@
+/ip firewall nat add chain=hotspot action=dst-nat to-addresses=10.10.10.11 to-ports=53 protocol=udp dst-port=53 hotspot=auth comment="Redirect auth hotspot DNS to AdGuard" place-before=5
+/ip firewall nat add chain=hotspot action=dst-nat to-addresses=10.10.10.11 to-ports=53 protocol=tcp dst-port=53 hotspot=auth comment="Redirect auth hotspot DNS to AdGuard" place-before=6
+
+
+PLACE IT BEFORE CHAIN HOTSPOT
+
+
+
+
+[zakariataibat@Taibat Co] > /ip firewall nat print 
+Flags: X - disabled, I - invalid; D - dynamic 
+ 0 X  ;;; EX VOIP FreePBX
+      chain=dstnat action=dst-nat to-addresses=192.168.102.37 protocol=udp dst-port=5060 log=yes log-prefix="" 
+
+ 1 X  ;;; EX VOIP FreePBX
+      chain=dstnat action=dst-nat to-addresses=192.168.102.37 protocol=udp dst-port=10000-20000 log=no log-prefix="" 
+
+ 2    ;;; EX VOIP
+      chain=dstnat action=dst-nat to-addresses=192.168.102.93 protocol=udp dst-port=5060 log=yes log-prefix="" 
+
+ 3  D chain=dstnat action=jump jump-target=hotspot hotspot=from-client 
+
+ 4  D chain=hotspot action=jump jump-target=pre-hotspot 
+
+ 5    ;;; Redirect auth hotspot DNS to AdGuard
+      chain=hotspot action=dst-nat to-addresses=10.10.10.11 to-ports=53 protocol=udp hotspot=auth dst-port=53 
+
+ 6    ;;; Redirect auth hotspot DNS to AdGuard
+      chain=hotspot action=dst-nat to-addresses=10.10.10.11 to-ports=53 protocol=tcp hotspot=auth dst-port=53 
+
+ 7  D chain=hotspot action=redirect to-ports=64872 protocol=udp dst-port=53 
+
+ 8  D chain=hotspot action=redirect to-ports=64872 protocol=tcp dst-port=53 
+
+ 9  D chain=hotspot action=redirect to-ports=64873 protocol=tcp hotspot=local-dst dst-port=80 
+
+10  D chain=hotspot action=redirect to-ports=64875 protocol=tcp hotspot=local-dst dst-port=443 
+
+11  D chain=hotspot action=jump jump-target=hs-unauth protocol=tcp hotspot=!auth 
+
+12  D chain=hotspot action=jump jump-target=hs-auth protocol=tcp hotspot=auth 
+
+13  D ;;; AdGuard DNS
+      chain=hs-unauth action=return dst-address=10.10.10.11 
+
+14  D ;;; Gate
+      chain=hs-unauth action=return dst-address=10.10.10.10 
+
+15  D chain=hs-unauth action=redirect to-ports=64874 protocol=tcp dst-port=80 
+
+16  D chain=hs-unauth action=redirect to-ports=64874 protocol=tcp dst-port=3128 
+
+17  D chain=hs-unauth action=redirect to-ports=64874 protocol=tcp dst-port=8080 
+
+18  D chain=hs-unauth action=redirect to-ports=64875 protocol=tcp dst-port=443 
+
+19  D chain=hs-unauth action=jump jump-target=hs-smtp protocol=tcp dst-port=25 
+
+20  D chain=hs-auth action=redirect to-ports=64874 protocol=tcp hotspot=http 
+
+21  D chain=hs-auth action=jump jump-target=hs-smtp protocol=tcp dst-port=25 
+
+22 X  ;;; place hotspot rules here
+      chain=unused-hs-chain action=passthrough 
+
+23    ;;; NTP NAT masquerade 
+      chain=srcnat action=masquerade to-ports=12300-12390 protocol=udp dst-port=123 
+
+24 X  ;;; defconf: accept all that matches IPSec policy
+      chain=srcnat action=accept ipsec-policy=out,ipsec 
+
+25 X  ;;; DNS Hotspot Adguard Fix
+      chain=srcnat action=accept protocol=udp src-address=10.210.0.0/24 dst-address=10.10.10.11 dst-port=53 log=no log-prefix="" 
+
+26    ;;; defconf: masquerade
+      chain=srcnat action=masquerade out-interface-list=WAN log=no log-prefix="" 
